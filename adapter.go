@@ -247,6 +247,17 @@ func (a *Adapter) AddPolicy(sec string, ptype string, line []string) error {
 	return err
 }
 
+// AddPolicies adds policy rules to the storage.
+// This is part of the Auto-Save feature.
+func (a *Adapter) AddPolicies(sec string, ptype string, rules [][]string) error {
+	for _, rule := range rules {
+		if err := a.AddPolicy(sec, ptype, rule); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // RemovePolicy removes a policy rule from the storage.
 // Part of the Auto-Save feature.
 func (a *Adapter) RemovePolicy(sec string, ptype string, line []string) error {
@@ -255,6 +266,17 @@ func (a *Adapter) RemovePolicy(sec string, ptype string, line []string) error {
 	defer cancel()
 	_, err := a.conn.Delete(ctx, a.constructPath(rule.Key))
 	return err
+}
+
+// RemovePolicies removes policy rules from the storage.
+// This is part of the Auto-Save feature.
+func (a *Adapter) RemovePolicies(sec string, ptype string, rules [][]string) error {
+	for _, rule := range rules {
+		if err := a.RemovePolicy(sec, ptype, rule); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
