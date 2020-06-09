@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/csv"
 	"log"
-	"os"
-
-	"github.com/casbin/casbin"
+	
+	"github.com/casbin/casbin/v2"
 	etcdadapter "github.com/ntk148v/etcd-adapter"
 )
 
@@ -13,9 +11,12 @@ func main() {
 	// Initialize a casbin etcd adapter and use it in a Casbin enforcer:
 	// The adapter will use the ETCD and a named path with the key you give.
 	// If not provided, the adapter will use the default value casbin_policy.
-	a := etcdadapter.NewAdapter([]string{"http://127.0.0.1:2379"}, "casbin_policy_test") // Your etcd endpoints and the path key.
+	a := etcdadapter.NewAdapter([]string{"http://127.0.0.1:6379"}, "casbin_policy_test") // Your etcd endpoints and the path key.
 
-	e := casbin.NewEnforcer("rbac_model.conf", a)
+	e, err := casbin.NewEnforcer("rbac_model.conf", a)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("connected to Etcd and init an Enforcer")
 
 	// Load the policy from ETCD.
@@ -23,30 +24,22 @@ func main() {
 		log.Println(err)
 	}
 
+	// Modify the policy.
+	rules := [][]string{
+		{"alice", "data1", "read"},
+		{"bob", "data2", "write"},
+		{"data2_admin", "data2", "read"},
+		{"data2_admin", "data2", "write"},
+	}
+	if ok, _ := e.AddPolicies(rules); ok {
+		log.Println("added new policies")
+	}
+
 	// Check the permission.
-	if ok := e.Enforce("alice", "data1", "read"); !ok {
+	if ok, err := e.Enforce("alice", "data1", "read"); !ok || err != nil {
 		log.Println("alice doesn't permission to read data1")
 	} else {
 		log.Println("alice is allowed to read data1")
-	}
-
-	// Modify the policy.
-	csvFile, err := os.Open("rbac_policy.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer csvFile.Close()
-	csvLines, err := csv.NewReader(csvFile).ReadAll()
-	if err != nil {
-		log.Println(err)
-	}
-	for _, line := range csvLines {
-		if len(line) != 4 {
-			continue
-		}
-		if ok := e.AddPolicy(line[1], line[2], line[3]); ok {
-			log.Println("added new rule to Etcd")
-		}
 	}
 
 	// e.RemovePolicy(...)
