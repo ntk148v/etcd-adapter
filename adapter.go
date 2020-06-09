@@ -18,18 +18,7 @@ import (
 )
 
 const (
-	// DialTimeout is the timeout for failing to establish a connection.
-	DIALTIMEOUT = 5 * time.Second
-
-	// DialKeepAliveTime is the time after which client pings the server to see if
-	// transport is alive.
-	DIALKEEPALIVETIME = 5 * time.Second
-
 	REQUESTTIMEOUT = 5 * time.Second
-
-	// DialKeepAliveTimeout is the time that the client waits for a response for the
-	// keep-alive probe. If the response is not received in this time, the connection is closed.
-	DIALKEEPALIVETIMEOUT = 10 * time.Second
 
 	// PLACEHOLDER represent the NULL value in the Casbin Rule.
 	PLACEHOLDER = "_"
@@ -51,24 +40,24 @@ type CasbinRule struct {
 
 // Adapter represents the ETCD adapter for policy storage.
 type Adapter struct {
-	etcdEndpoints []string
-	key           string
+	etcdCfg client.Config
+	key     string
 
 	// etcd connection client
 	conn *client.Client
 }
 
-func NewAdapter(etcdEndpoints []string, key string) *Adapter {
-	return newAdapter(etcdEndpoints, key)
+func NewAdapter(etcdCfg client.Config, key string) *Adapter {
+	return newAdapter(etcdCfg, key)
 }
 
-func newAdapter(etcdEndpoints []string, key string) *Adapter {
+func newAdapter(etcdCfg client.Config, key string) *Adapter {
 	if key == "" {
 		key = DEFAULT_KEY
 	}
 	a := &Adapter{
-		etcdEndpoints: etcdEndpoints,
-		key:           key,
+		etcdCfg: etcdCfg,
+		key:     key,
 	}
 	a.connect()
 
@@ -79,14 +68,7 @@ func newAdapter(etcdEndpoints []string, key string) *Adapter {
 }
 
 func (a *Adapter) connect() {
-	etcdConf := client.Config{
-		Endpoints:            a.etcdEndpoints,
-		DialTimeout:          DIALTIMEOUT,
-		DialKeepAliveTimeout: DIALKEEPALIVETIMEOUT,
-		DialKeepAliveTime:    DIALKEEPALIVETIME,
-	}
-
-	connection, err := client.New(etcdConf)
+	connection, err := client.New(a.etcdCfg)
 	if err != nil {
 		panic(err)
 	}
