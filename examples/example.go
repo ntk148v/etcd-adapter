@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
+	"log"
+	"os"
+
 	"github.com/casbin/casbin"
-	"github.com/ntk148v/etcd-adapter"
+	etcdadapter "github.com/ntk148v/etcd-adapter"
 )
 
 func main() {
@@ -12,17 +16,43 @@ func main() {
 	a := etcdadapter.NewAdapter([]string{"http://127.0.0.1:2379"}, "casbin_policy_test") // Your etcd endpoints and the path key.
 
 	e := casbin.NewEnforcer("rbac_model.conf", a)
+	log.Println("connected to Etcd and init an Enforcer")
 
 	// Load the policy from ETCD.
-	e.LoadPolicy()
+	if err := e.LoadPolicy(); err != nil {
+		log.Println(err)
+	}
 
 	// Check the permission.
-	e.Enforce("alice", "data1", "read")
+	if ok := e.Enforce("alice", "data1", "read"); !ok {
+		log.Println("alice doesn't permission to read data1")
+	} else {
+		log.Println("alice is allowed to read data1")
+	}
 
 	// Modify the policy.
-	// e.AddPolicy(...)
+	csvFile, err := os.Open("rbac_policy.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer csvFile.Close()
+	csvLines, err := csv.NewReader(csvFile).ReadAll()
+	if err != nil {
+		log.Println(err)
+	}
+	for _, line := range csvLines {
+		if len(line) != 4 {
+			continue
+		}
+		if ok := e.AddPolicy(line[1], line[2], line[3]); ok {
+			log.Println("added new rule to Etcd")
+		}
+	}
+
 	// e.RemovePolicy(...)
 
 	// Save the policy back to DB.
-	e.SavePolicy()
+	if err := e.SavePolicy(); err != nil {
+		log.Fatal(err)
+	}
 }
