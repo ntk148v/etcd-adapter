@@ -64,6 +64,7 @@ func main() {
 	}
 
 	// e.RemovePolicy(...)
+	log.Println(e.GetPolicy())
 
 	// Save the policy back to DB.
 	if err := e.SavePolicy(); err != nil {
