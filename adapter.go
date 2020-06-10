@@ -15,6 +15,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
 	client "go.etcd.io/etcd/clientv3"
+	clientnamespace "go.etcd.io/etcd/clientv3/namespace"
 )
 
 const (
@@ -47,11 +48,11 @@ type Adapter struct {
 	conn *client.Client
 }
 
-func NewAdapter(etcdCfg client.Config, key string) *Adapter {
-	return newAdapter(etcdCfg, key)
+func NewAdapter(etcdCfg client.Config, namespace string, key string) *Adapter {
+	return newAdapter(etcdCfg, namespace, key)
 }
 
-func newAdapter(etcdCfg client.Config, key string) *Adapter {
+func newAdapter(etcdCfg client.Config, namespace string, key string) *Adapter {
 	if key == "" {
 		key = DEFAULT_KEY
 	}
@@ -59,7 +60,7 @@ func newAdapter(etcdCfg client.Config, key string) *Adapter {
 		etcdCfg: etcdCfg,
 		key:     key,
 	}
-	a.connect()
+	a.connect(namespace)
 
 	// Call the destructor when the object is released.
 	runtime.SetFinalizer(a, finalizer)
@@ -67,10 +68,15 @@ func newAdapter(etcdCfg client.Config, key string) *Adapter {
 	return a
 }
 
-func (a *Adapter) connect() {
+func (a *Adapter) connect(namespace string) {
 	connection, err := client.New(a.etcdCfg)
 	if err != nil {
 		panic(err)
+	}
+	if namespace != "" {
+		connection.Watcher = clientnamespace.NewWatcher(connection.Watcher, namespace)
+		connection.Lease = clientnamespace.NewLease(connection.Lease, namespace)
+		connection.KV = clientnamespace.NewKV(connection.KV, namespace)
 	}
 	a.conn = connection
 }

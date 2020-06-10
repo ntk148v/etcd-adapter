@@ -10,7 +10,9 @@ ETCD adapter is the policy storage adapter for [Casbin](https://github.com/casbi
 - Add a set of policies rule to the storage.
 - Remove a set of policies rule to the storage.
 
-Additional, this adapter allows user to fully control the Etcd configuration. It will be useful if Etcd is enable authentication.
+Additional, this adapter allows user to:
+- Fully control the Etcd configuration. It will be useful if Etcd is enable authentication.
+- Support Etcd namespace.
 
 ## Installation
 ```bash

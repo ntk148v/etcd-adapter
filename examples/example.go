@@ -32,7 +32,7 @@ func main() {
 		DialKeepAliveTime:    DialKeepAliveTime,
 		DialKeepAliveTimeout: DialKeepAliveTimeout,
 	}
-	a := etcdadapter.NewAdapter(etcdCfg, "casbin_policy_test") // Your etcd endpoints and the path key.
+	a := etcdadapter.NewAdapter(etcdCfg, "test", "casbin_policy_test") // Your etcd endpoints and the path key.
 
 	e, err := casbin.NewEnforcer("rbac_model.conf", a)
 	if err != nil {
